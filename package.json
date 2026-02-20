@@ -1,6 +1,6 @@
 {
   "name": "@spinzaf/freefire-api",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "A powerful Node.js library to interact with Garena Free Fire API using Protobuf. Login, Search Players, and get Profile Stats.",
   "main": "index.js",
   "scripts": {
