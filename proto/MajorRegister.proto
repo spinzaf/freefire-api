@@ -8,7 +8,7 @@ message request {
     int32 platform = 6;
     int32 field_7 = 7;
     int32 field_13 = 13;
-    bytes encrypted_openid = 14;
+    bytes field_14 = 14;
     string region = 15;
     int32 field_16 = 16;
 }
