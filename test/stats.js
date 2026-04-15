@@ -1,4 +1,4 @@
-const FreeFireAPI = require('../index');
+const { FreeFireAPI } = require('../index');
 
 async function testStats() {
     const targetUid = process.argv[2] || "16207002";

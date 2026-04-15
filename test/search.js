@@ -1,4 +1,4 @@
-const FreeFireAPI = require('../index');
+const { FreeFireAPI } = require('../index');
 
 async function testSearch() {
     const searchName = process.argv[2] || "folaa";

@@ -10,175 +10,131 @@ A Node.js library to interact with Free Fire endpoints using Protobuf.
 ## Disclaimer
 This project is **unofficial** and is not affiliated with Garena.
 
-## Features
-- Login and session management
-- Search account by nickname
-- Get player profile
-- Get BR/CS stats
-- Get equipped player items
-- YAML-based configuration
 
-## Installation
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Search | Find players by nickname |
+| Profile | Get player info, level, likes |
+| Stats | BR/CS stats (Career, Ranked) |
+| Items | Equipped outfit, weapons, pet |
+| Register | Create guest accounts |
+| Like | Send likes using guest accounts |
+
+## Install
+
 ```bash
 npm install @spinzaf/freefire-api
 ```
 
-## Requirements
-- Node.js 14+
-
 ## Quick Start
+
 ```js
-const FreeFireAPI = require('@spinzaf/freefire-api');
+const { FreeFireAPI } = require('@spinzaf/freefire-api');
 
-async function main() {
-  const api = new FreeFireAPI();
+const api = new FreeFireAPI();
 
-  // Auto login via config/credentials.yaml
-  const players = await api.searchAccount('Spin');
-  console.log(players);
-}
+// Search player
+const players = await api.searchAccount('nickname');
 
-main().catch(console.error);
+// Get profile
+const profile = await api.getPlayerProfile('12345678');
+
+// Get stats
+const stats = await api.getPlayerStats('12345678', 'br', 'career');
 ```
 
-## Configuration (Optional)
+## API
 
-### 1. Credentials (`config/credentials.yaml`)
-Used when calling `login()` without parameters.
+### Search
+```js
+const results = await api.searchAccount('nickname');
+```
 
+### Profile
+```js
+const profile = await api.getPlayerProfile('uid');
+// Returns: { nickname, level, region, likes, ... }
+```
+
+### Stats
+```js
+const br = await api.getPlayerStats('uid', 'br', 'career');
+const cs = await api.getPlayerStats('uid', 'cs', 'ranked');
+// mode: 'br' | 'cs'
+// type: 'career' | 'ranked' | 'normal'
+```
+
+### Register Account
+```js
+// Create guest account
+const account = await api.register('IND'); // region required
+console.log(account);
+// { uid, password, passwordHash, region, nickname }
+```
+
+### Send Likes
+```js
+const { LikeAPI } = require('@spinzaf/freefire-api');
+
+const like = new LikeAPI();
+await like.sendLikes('target_uid', 'IND', 100); // max 100/day
+```
+
+## Regions
+
+Supported: `IND`, `SG`, `BR`, `US`, `RU`, `TH`, `VN`, `TW`, `ME`, `CIS`, `BD`
+
+**Note:** Some regions (ID, PK) don't support guest registration.
+
+## Custom Credentials (Optional)
+
+Create `config/credentials.yaml`:
 ```yaml
-UID: "YOUR_UID"
-PASSWORD: "YOUR_PASSWORD"
+UID: "your_uid"
+PASSWORD: "your_password"
 ```
 
-### 2. Core Settings (`config/settings.yaml`)
-Primary source for internal constants: `AE`, `HEADERS`, `URLS`, `GARENA_CLIENT`.
-
-```yaml
-HEADERS_COMMON_RELEASE_VERSION: "OB52"
-URL_MAJOR_LOGIN: "https://loginbp.ggblueshark.com/MajorLogin"
-```
-
-## API Reference
-
-### `new FreeFireAPI()`
-Creates a new API client instance.
-
-### `api.login(uid?, password?)`
-Optional account authentication (not required).
-
+Or pass directly:
 ```js
-await api.login('YOUR_UID', 'YOUR_PASSWORD');
-```
-
-Use this only if you want to login manually.  
-Default provider credentials are already available, so calling `login()` is optional.
-
-If parameters are omitted, the library reads credentials from `config/credentials.yaml`.
-
-### `api.searchAccount(keyword)`
-Searches accounts by nickname.
-
-```js
-const results = await api.searchAccount('Spin');
-```
-
-### `api.getPlayerProfile(uid)`
-Fetches detailed player profile information.
-
-```js
-const profile = await api.getPlayerProfile('16207002');
-```
-
-### `api.getPlayerStats(uid, mode, matchType)`
-Fetches player statistics.
-
-- `mode`: `br` | `cs`
-- `matchType`: `career` | `ranked` | `normal`
-
-```js
-const brCareer = await api.getPlayerStats('16207002', 'br', 'career');
-const csRanked = await api.getPlayerStats('16207002', 'cs', 'ranked');
-```
-
-### `api.getPlayerItems(uid)`
-Fetches currently equipped player items.
-
-```js
-const items = await api.getPlayerItems('16207002');
-console.log(items);
-```
-
-Sample response:
-```json
-{
-  "basic_info": {
-    "accountid": "16207002",
-    "nickname": "Spin",
-    "level": 74,
-    "region": "ID"
-  },
-  "items": {
-    "outfit": [{ "id": 101001, "name": "Skull Mask" }],
-    "weapons": {
-      "shown_skins": [{ "id": 907001, "name": "AK47 - Blue Flame" }]
-    },
-    "skills": {
-      "equipped": [{ "id": 123, "name": "Alok: Drop the Beat" }]
-    },
-    "pet": {
-      "name": "Falco"
-    }
-  }
-}
-```
-
-## Error Handling
-Use `try/catch` for all async calls.
-
-```js
-try {
-  const profile = await api.getPlayerProfile('16207002');
-  console.log(profile);
-} catch (err) {
-  console.error('API error:', err.message);
-}
+await api.login('uid', 'password');
 ```
 
 ## Testing
+
 ```bash
-npm test
-npm run test:login
-npm run test:search
-npm run test:profile
-npm run test:stats
-npm run test:items
-npm run test:all
+npm run test:all          # All tests
+npm run test:search       # Search only
+npm run test:register     # Register test
+npm run test:like 123456789 IND 5  # Send 5 likes
 ```
+## Example Testing Response
+```
+============================================================
+ RUNNING ALL TESTS
+============================================================
 
-### Full Test Output Example
-The following is a complete, readable example from `npm run test:all`:
-
-```text
-Running all tests sequentially...
-
--------------- login.js:
+[TEST] Login...
 Loaded 27989 items into database.
 Starting Login Test...
-[i] No credentials provided, loading from config/credentials.yaml.
+[API] Loaded 261 credentials from all regions
+[API] Using random credential from all regions: 4718573403
 Login success!
 Token: eyJhbGciOiJIUzI1NiIs...
-OpenID: ee3fa75646052bbf713d9f7f3e0a5c81
+OpenID: e07de22b7e01ad288c0d5c3d6d9b1b37
+[✓] Login PASSED
 
--------------- search.js:
+[TEST] Search...
 Loaded 27989 items into database.
 Starting Search Test for 'folaa'...
-[i] No credentials provided, loading from config/credentials.yaml.
+[API] Loaded 261 credentials from all regions
+[API] Using random credential from all regions: 4718549327
 Found 10 players.
 Top Result: Folaa (UID: 16778836)
 [1] Folaa - UID: 16778836 - LVL: 3
 [2] FolAa_66 - UID: 1943283579 - LVL: 46
-[3] Folaa_golgem - UID: 14576052221 - LVL: 6
+[3] Folaa_golgem - UID: 14576052221 - LVL: 17
 [4] folaa_ji - UID: 9436868269 - LVL: 7
 [5] Folaa- - UID: 2357144535 - LVL: 1
 [6] FOLAA-khna9 - UID: 2359319137 - LVL: 1
@@ -186,50 +142,74 @@ Top Result: Folaa (UID: 16778836)
 [8] folaa!! - UID: 8341924255 - LVL: 17
 [9] folaa..... - UID: 6973843243 - LVL: 2
 [10] folaa***** - UID: 5824293752 - LVL: 5
+[✓] Search PASSED
 
--------------- profile.js:
+[TEST] Profile...
 Loaded 27989 items into database.
 Starting Profile Test for UID: 12345678...
-[i] No credentials provided, loading from config/credentials.yaml.
+[API] Loaded 261 credentials from all regions
+[API] Using random credential from all regions: 4718550346
 
 --- Basic Info ---
 Nickname: FB:ㅤ@GMRemyX
 Level: 68
-EXP: 2327466
+EXP: 2381543
 Region: SG
-Likes: 3682188
+Likes: 3799818
 Created At: 12/7/2017, 5:19:29 AM
-Last Login: 2/19/2026, 6:02:53 PM
+Last Login: 4/15/2026, 10:30:22 AM
 
 --- Pet Info ---
 Pet Name: SiNo
 Pet Level: 7
+[✓] Profile PASSED
 
--------------- stats.js:
+[TEST] Stats...
 Loaded 27989 items into database.
 Starting Stats Test for UID: 16207002...
 Fetching BR Career...
-[i] No credentials provided, loading from config/credentials.yaml.
+[API] Loaded 261 credentials from all regions
+[API] Using random credential from all regions: 4718575604
 
 --- BR Career ---
-Solo: {"accountid":"16207002","gamesplayed":1055,"wins":88,"kills":2769,"detailedstats":{"deaths":967,"top10times":0,"topntimes":279,"distancetravelled":3224879,"survivaltime":458396,"revives":0,"highestkills":20,"damage":812652,"roadkills":47,"headshots":1453,"headshotkills":630,"knockdown":0,"pickups":58619}}
-Duo: {"accountid":"16207002","gamesplayed":461,"wins":80,"kills":1383,"detailedstats":{"deaths":381,"top10times":0,"topntimes":144,"distancetravelled":1544324,"survivaltime":217132,"revives":98,"highestkills":22,"damage":487692,"roadkills":48,"headshots":960,"headshotkills":367,"knockdown":1320,"pickups":32130}}
-Squad: {"accountid":"16207002","gamesplayed":6451,"wins":1225,"kills":16041,"detailedstats":{"deaths":5226,"top10times":0,"topntimes":2059,"distancetravelled":26527594,"survivaltime":3204309,"revives":1305,"highestkills":34,"damage":7241365,"roadkills":122,"headshots":12622,"headshotkills":3899,"knockdown":17564,"pickups":586395}}
+Solo: {"accountid":"16207002","gamesplayed":1059,"wins":88,"kills":2783,"detailedstats":{"deaths":971,"top10times":0,"topntimes":280,"distancetravelled":3233791,"survivaltime":459258,"revives":0,"highestkills":20,"damage":816313,"roadkills":47,"headshots":1459,"headshotkills":633,"knockdown":0,"pickups":58931}}
+Duo: {"accountid":"16207002","gamesplayed":462,"wins":80,"kills":1383,"detailedstats":{"deaths":382,"top10times":0,"topntimes":144,"distancetravelled":1547115,"survivaltime":217364,"revives":98,"highestkills":22,"damage":487692,"roadkills":48,"headshots":960,"headshotkills":367,"knockdown":1320,"pickups":32172}}
+Squad: {"accountid":"16207002","gamesplayed":6675,"wins":1236,"kills":16853,"detailedstats":{"deaths":5439,"top10times":0,"topntimes":2077,"distancetravelled":27153330,"survivaltime":3261428,"revives":1310,"highestkills":34,"damage":7579602,"roadkills":122,"headshots":13227,"headshotkills":4101,"knockdown":18491,"pickups":602207}}
 Fetching BR Ranked...
 
 --- BR Ranked ---
-Solo: {"accountid":"16207002","gamesplayed":4,"wins":1,"kills":25,"detailedstats":{"deaths":3,"top10times":0,"topntimes":3,"distancetravelled":13591,"survivaltime":1857,"revives":0,"highestkills":15,"damage":6317,"roadkills":0,"headshots":19,"headshotkills":8,"knockdown":0,"pickups":483}}
-Duo: {"accountid":"16207002","gamesplayed":3,"wins":1,"kills":8,"detailedstats":{"deaths":2,"top10times":0,"topntimes":2,"distancetravelled":14501,"survivaltime":1607,"revives":3,"highestkills":4,"damage":2561,"roadkills":0,"headshots":2,"headshotkills":0,"knockdown":10,"pickups":383}}
-Squad: {"accountid":"16207002","gamesplayed":548,"wins":50,"kills":1520,"detailedstats":{"deaths":498,"top10times":0,"topntimes":74,"distancetravelled":1859691,"survivaltime":169414,"revives":57,"highestkills":21,"damage":672006,"roadkills":0,"headshots":1287,"headshotkills":392,"knockdown":1741,"pickups":47692}}
+Solo: {"accountid":"16207002","gamesplayed":4,"wins":0,"kills":14,"detailedstats":{"deaths":4,"top10times":0,"topntimes":1,"distancetravelled":8912,"survivaltime":862,"revives":0,"highestkills":7,"damage":3661,"roadkills":0,"headshots":6,"headshotkills":3,"knockdown":0,"pickups":312}}      
+Duo: {"accountid":"16207002","gamesplayed":1,"wins":0,"kills":0,"detailedstats":{"deaths":1,"top10times":0,"topntimes":0,"distancetravelled":2791,"survivaltime":232,"revives":0,"highestkills":0,"damage":0,"roadkills":0,"headshots":0,"headshotkills":0,"knockdown":0,"pickups":42}}
+Squad: {"accountid":"16207002","gamesplayed":217,"wins":11,"kills":778,"detailedstats":{"deaths":206,"top10times":0,"topntimes":18,"distancetravelled":605333,"survivaltime":55263,"revives":5,"highestkills":18,"damage":322794,"roadkills":0,"headshots":577,"headshotkills":190,"knockdown":889,"pickups":15286}}
 Fetching CS Career...
 
 --- CS Career ---
 Data: {
   "csstats": {
     "accountid": "16207002",
-    "gamesplayed": 3102,
-    "wins": 1788,
-    "kills": 12555
+    "gamesplayed": 3119,
+    "wins": 1794,
+    "kills": 12605,
+    "detailedstats": {
+      "mvpcount": 1005,
+      "doublekills": 2191,
+      "triplekills": 843,
+      "fourkills": 167,
+      "damage": 5479860,
+      "headshotkills": 3938,
+      "knockdowns": 14399,
+      "revivals": 844,
+      "assists": 5527,
+      "deaths": 10029,
+      "streakwins": 0,
+      "throwingkills": 0,
+      "onegamemostdamage": 0,
+      "onegamemostkills": 0,
+      "ratingpoints": 0,
+      "ratingenabledgames": 0,
+      "headshotcount": 0,
+      "hitcount": 0
+    }
   }
 }
 Fetching CS Ranked...
@@ -238,60 +218,117 @@ Fetching CS Ranked...
 Data: {
   "csstats": {
     "accountid": "16207002",
-    "gamesplayed": 56,
-    "wins": 30,
-    "kills": 196
+    "gamesplayed": 0,
+    "wins": 0,
+    "kills": 0,
+    "detailedstats": {
+      "mvpcount": 0,
+      "doublekills": 0,
+      "triplekills": 0,
+      "fourkills": 0,
+      "damage": 0,
+      "headshotkills": 0,
+      "knockdowns": 0,
+      "revivals": 0,
+      "assists": 0,
+      "deaths": 0,
+      "streakwins": 0,
+      "throwingkills": 0,
+      "onegamemostdamage": 0,
+      "onegamemostkills": 0,
+      "ratingpoints": 0,
+      "ratingenabledgames": 0,
+      "headshotcount": 0,
+      "hitcount": 0
+    }
   }
 }
+[✓] Stats PASSED
 
--------------- items.js:
+[TEST] Items...
 Loaded 27989 items into database.
 Starting Items Test for UID: 12345678...
 Getting Player Items...
-[i] No credentials provided, loading from config/credentials.yaml.
+[API] Loaded 261 credentials from all regions
+[API] Using random credential from all regions: 4718567085
 
 --- Summary ---
 Nickname: FB:ㅤ@GMRemyX
 UID: 12345678
 Outfit Items: 1
 Weapon Items: 0
-Skills Equipped: 6
-Skills: 211000028, 214049006, 205000805, 211043045, 203038045, 204041011
+Skills Equipped: 5
+Skills: 214049006, 205000455, 211000016, 203000543, 204000103
 Pet Name: SiNo
 Pet ID: Poring
 
 --- First 5 Outfits ---
 - Unknown Item (ID: 50)
+[✓] Items PASSED
 
-All tests passed successfully!
+[TEST] Like...
+Loaded 27989 items into database.
+==================================================
+ FREE FIRE - AUTO LIKE PROFILE
+==================================================
+Target UID: 616257968
+Region: IND
+Likes to send: 1
+
+[CredentialManager] Loaded 109 accounts for IND
+[LikeAPI] Available guests for 616257968: 109/109
+[LikeAPI] Planning to send 1 likes to 616257968 using IND guests
+[LikeAPI] Progress: 1/1 (0✓ 0✗)
+[LikeAPI] Completed: 1/1 likes sent successfully
+
+==================================================
+ RESULT
+==================================================
+Success: 1/1
+Failed: 0
+Remaining guests: 108
+
+Sent 1 likes to 616257968. 108 guests remaining.
+==================================================
+[✓] Like PASSED
+
+============================================================
+ TEST SUMMARY
+============================================================
+[✓] Login: PASS
+[✓] Search: PASS
+[✓] Profile: PASS
+[✓] Stats: PASS
+[✓] Items: PASS
+[✓] Like: PASS
+============================================================
+Passed: 6/6
+Failed: 0/6
+============================================================
+
+[✓] ALL TESTS PASSED
 ```
 
-## Project Structure
-- `lib/api.js`: core API client
-- `lib/protobuf.js`: protobuf encode/decode
-- `lib/crypto.js`: AES encryption
-- `lib/utils.js`: item processing utilities
-- `config/settings.yaml`: core settings
-- `config/credentials.yaml`: default login credentials
-- `proto/`: protobuf schema files
-- `data/items.json`: item data source
+## Mass Registration
 
-## Metadata
-- npm: `@spinzaf/freefire-api`
-- repository: `https://github.com/spinzaf/freefire-api`
-- license: GPL-3.0
+```bash
+node test/dev/register.js
+```
 
-## Acknowledgements
-We perform this work standing on the shoulders of giants. Special thanks to the open-source community for their Reverse Engineering efforts.
+Auto-saves to `config/credentials/{region}.yaml`. Resume supported.
 
-- `0xMe/FreeFire-Api`: Prior research established a Python-based workflow. This project converts that logic into an easy-to-use JavaScript implementation, with equivalent functionality.
+## Project
 
-## Support
-If you find this project helpful and would like to support the development, you can treat me to a coffee! ☕
+- `lib/api.js` - Core API
+- `lib/like.js` - Like feature
+- `config/settings.yaml` - Headers & URLs
+- `config/credentials/` - Guest accounts
 
-- Donate via Saweria: https://saweria.co/spinzaf
+## Credits
 
-A huge thank you to everyone who has supported! Your support keeps this project alive. ❤️
+- **Spinzaf** - Node.js Rewrite
+- **0xMe** - Original Python Developer
 
 ## License
-GNU General Public License v3.0
+
+GPL-3.0
